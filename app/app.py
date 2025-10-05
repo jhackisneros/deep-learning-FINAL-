@@ -18,14 +18,21 @@ app.secret_key = "super_secret_key"
 app.config['UPLOAD_FOLDER'] = os.path.join('app', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# --- Cargar modelo si existe ---
+# --- Cargar modelo MLP si existe ---
 MODEL_PATH = os.path.join('models', 'mnist_compiled_model.keras')
-model = None
+mlp_model = None
 if os.path.exists(MODEL_PATH):
-    model = keras.models.load_model(MODEL_PATH, compile=False, safe_mode=False)
-    model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
+    mlp_model = keras.models.load_model(MODEL_PATH, compile=False, safe_mode=False)
+    mlp_model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 else:
-    print(f"⚠️ Warning: modelo no encontrado en {MODEL_PATH}. Rutas de predicción inactivas.")
+    print(f"⚠️ Warning: modelo MLP no encontrado en {MODEL_PATH}. Rutas de predicción inactivas.")
+
+# --- Cargar métricas CNN si existen ---
+CNN_METRICS_PATH = os.path.join('models', 'cnn_metrics.json')
+cnn_metrics = {}
+if os.path.exists(CNN_METRICS_PATH):
+    with open(CNN_METRICS_PATH, 'r') as f:
+        cnn_metrics = json.load(f)
 
 # --- Log de predicciones ---
 PRED_LOG = os.path.join('app', 'predictions.json')
@@ -107,8 +114,8 @@ def my_predictions():
 # ---------------- Rutas de predicción ----------------
 @app.route('/predict', methods=['POST'])
 def predict():
-    if model is None:
-        return jsonify({'error': 'Modelo no cargado'}), 500
+    if mlp_model is None:
+        return jsonify({'error': 'Modelo MLP no cargado'}), 500
 
     data = request.get_json()
     if not data or 'image' not in data:
@@ -117,7 +124,7 @@ def predict():
     user_id = get_current_user()
     try:
         arr = preprocess_image(data['image'], target_size=(28,28), flatten=True)
-        pred = model.predict(arr.reshape(1, -1))
+        pred = mlp_model.predict(arr.reshape(1, -1))
         label = int(np.argmax(pred))
         confidence = float(np.max(pred))
 
@@ -127,16 +134,17 @@ def predict():
             'filename': None,
             'pred': label,
             'confidence': confidence,
+            'model': 'MLP'  # Aquí se registra el modelo
         }
         save_prediction_local(record)
-        return jsonify({'pred': label, 'confidence': confidence})
+        return jsonify({'pred': label, 'confidence': confidence, 'model': 'MLP'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/predict_batch', methods=['POST'])
 def predict_batch():
-    if model is None:
-        return jsonify({'error': 'Modelo no cargado'}), 500
+    if mlp_model is None:
+        return jsonify({'error': 'Modelo MLP no cargado'}), 500
 
     results = []
     files = request.files.getlist('files')
@@ -148,7 +156,7 @@ def predict_batch():
     for f in files:
         try:
             arr = preprocess_image(f.read(), target_size=(28,28), flatten=True)
-            pred = model.predict(arr.reshape(1, -1))
+            pred = mlp_model.predict(arr.reshape(1, -1))
             label = int(np.argmax(pred))
             confidence = float(np.max(pred))
             record = {
@@ -157,6 +165,7 @@ def predict_batch():
                 'filename': f.filename or None,
                 'pred': label,
                 'confidence': confidence,
+                'model': 'MLP'
             }
             save_prediction_local(record)
             results.append(record)
@@ -197,7 +206,14 @@ def stats():
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
     data = [d for d in data if d.get('user') == user_id]
-    return render_template("stats.html", history=data)
+
+    mlp_acc = None
+    if mlp_model:
+        mlp_acc = "Ya calculada en Colab"  # Placeholder, si quieres podrías calcularla en x_test/y_test
+
+    cnn_acc = cnn_metrics.get("cnn_test_accuracy")
+
+    return render_template("stats.html", history=data, mlp_accuracy=mlp_acc, cnn_accuracy=cnn_acc)
 
 # ---------------- QR de estadísticas actualizado ----------------
 @app.route('/generate_qr', methods=['GET'])

@@ -16,9 +16,11 @@
         .user-actions { text-align: center; margin-bottom: 20px; }
         .user-actions a { margin: 0 10px; text-decoration: none; font-weight: bold; color: #222; }
         .user-actions a:hover { color: #00bfff; }
+        .model-stats { text-align: center; margin-bottom: 30px; }
+        .model-stats p { font-size: 1.2em; margin: 5px 0; }
     </style>
 </head>
-<body data-history='{{ history|tojson }}'>
+<body data-history='{{ history|tojson }}' data-mlp="{{ mlp_accuracy }}" data-cnn="{{ cnn_accuracy }}">
     <!-- Navbar -->
     {% include 'navbar.html' %}
 
@@ -33,6 +35,13 @@
             <a href="{{ url_for('register') }}">Registro</a>
         {% endif %}
     </div>
+
+    <!-- Sección: Precisión de los modelos -->
+    <section class="model-stats">
+        <h2>Precisión de Modelos</h2>
+        <p>MLP: {{ mlp_accuracy or 'No disponible' }}</p>
+        <p>CNN: {{ cnn_accuracy or 'No disponible' }}</p>
+    </section>
 
     <!-- Sección: Gráficas -->
     <section>
@@ -51,6 +60,7 @@
                     <th>Archivo/Canvas</th>
                     <th>Predicción</th>
                     <th>Confianza</th>
+                    <th>Modelo</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,6 +70,7 @@
                     <td>{{ rec.filename or 'Canvas' }}</td>
                     <td>{{ rec.pred }}</td>
                     <td>{{ '%.2f' % (rec.confidence*100) }}%</td>
+                    <td>{{ rec.model or 'MLP' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -77,24 +88,41 @@
     <!-- Scripts -->
     <script src="{{ url_for('static', filename='darkmode.js') }}"></script>
     <script>
-        // Charts dinámicos
+        // Charts dinámicos comparando MLP vs CNN
         const historyData = JSON.parse(document.body.dataset.history);
+
+        // Separar predicciones por modelo
         const labels = historyData.map((_, i) => i + 1);
-        const accData = historyData.map(d => d.confidence ?? 0);
-        const lossData = historyData.map(d => 1 - (d.confidence ?? 0));
+        const mlpData = historyData.map(d => d.model === 'MLP' ? d.confidence ?? 0 : null);
+        const cnnData = historyData.map(d => d.model === 'CNN' ? d.confidence ?? 0 : null);
+
+        const lossMLP = mlpData.map(v => v !== null ? 1 - v : null);
+        const lossCNN = cnnData.map(v => v !== null ? 1 - v : null);
 
         const ctxAcc = document.getElementById('accuracy-chart').getContext('2d');
         const ctxLoss = document.getElementById('loss-chart').getContext('2d');
 
         new Chart(ctxAcc, {
             type: 'line',
-            data: { labels, datasets: [{ label: 'Precisión (Accuracy)', data: accData, borderColor: 'rgba(54,162,235,1)', backgroundColor: 'rgba(54,162,235,0.2)', fill: true, tension: 0.3 }] },
+            data: { 
+                labels, 
+                datasets: [
+                    { label: 'MLP Accuracy', data: mlpData, borderColor: 'rgba(54,162,235,1)', backgroundColor: 'rgba(54,162,235,0.2)', fill: true, tension: 0.3 },
+                    { label: 'CNN Accuracy', data: cnnData, borderColor: 'rgba(255,159,64,1)', backgroundColor: 'rgba(255,159,64,0.2)', fill: true, tension: 0.3 }
+                ] 
+            },
             options: { responsive: true, scales: { y: { min: 0, max: 1 } } }
         });
 
         new Chart(ctxLoss, {
             type: 'line',
-            data: { labels, datasets: [{ label: 'Pérdida (Loss)', data: lossData, borderColor: 'rgba(255,99,132,1)', backgroundColor: 'rgba(230,104,131,0.2)', fill: true, tension: 0.3 }] },
+            data: { 
+                labels, 
+                datasets: [
+                    { label: 'MLP Loss', data: lossMLP, borderColor: 'rgba(54,99,235,1)', backgroundColor: 'rgba(54,99,235,0.2)', fill: true, tension: 0.3 },
+                    { label: 'CNN Loss', data: lossCNN, borderColor: 'rgba(255,99,132,1)', backgroundColor: 'rgba(255,99,132,0.2)', fill: true, tension: 0.3 }
+                ] 
+            },
             options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
 
