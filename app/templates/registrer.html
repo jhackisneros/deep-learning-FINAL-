@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Registro - MNIST AI Demo</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='darkmode.css') }}" id="darkmode-css" disabled>
 </head>
 <body>
     <!-- Navbar -->
@@ -14,7 +15,7 @@
     </header>
 
     <main>
-        <form id="register-form" method="POST" action="/register">
+        <form id="register-form" method="POST" action="{{ url_for('register') }}">
             <label for="username">Usuario:</label>
             <input type="text" id="username" name="username" required>
 
@@ -30,7 +31,10 @@
             <button type="submit">Registrarse</button>
         </form>
 
-        <p>¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a></p>
+        <p>¿Ya tienes cuenta? <a href="{{ url_for('login') }}">Inicia sesión aquí</a></p>
     </main>
+
+    <!-- JS -->
+    <script src="{{ url_for('static', filename='darkmode.js') }}"></script>
 </body>
 </html>

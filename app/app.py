@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, redirect, url_for
 import os
 import io
 import json
@@ -21,7 +21,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Try to load the model (if exists)
 MODEL_PATH = os.path.join('models', 'mnist_compiled_model.keras')
 
-model = keras.models.load_model(MODEL_PATH)
+model = None
 if os.path.exists(MODEL_PATH):
     model = keras.models.load_model(MODEL_PATH, compile=False, safe_mode=False)
     model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
@@ -33,7 +33,6 @@ PRED_LOG = os.path.join('app','predictions.json')
 if not os.path.exists(PRED_LOG):
     with open(PRED_LOG, 'w') as f:
         json.dump([], f)
-
 
 def save_prediction_local(record: dict):
     """Guarda la predicción localmente en predictions.json"""
@@ -47,12 +46,36 @@ def save_prediction_local(record: dict):
         json.dump(data, fh, ensure_ascii=False, indent=2)
         fh.truncate()
 
-
+# ---------------- Rutas principales ----------------
 @app.route('/')
 def index():
     return render_template('index.html')
 
 
+# ---------------- Rutas de autenticación ----------------
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        # Lógica de autenticación temporal
+        # Para pruebas, simplemente redirigimos al index
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        # Lógica de registro temporal
+        # Para pruebas, simplemente redirigimos al index
+        return redirect(url_for('index'))
+    return render_template('register.html')
+
+
+# ---------------- Rutas de predicción ----------------
 @app.route('/predict', methods=['POST'])
 def predict():
     """Recibe JSON {image: 'data:image/png;base64,...', user: 'username' (optional)}"""
