@@ -1,5 +1,4 @@
 // static/realtime.js
-
 document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.getElementById("canvas-mnist");
     const ctx = canvas.getContext("2d");
@@ -56,11 +55,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const json = await res.json();
 
             if (Array.isArray(json) && json.length > 0) {
-                // Mostrar predicciones de cada modelo de forma ordenada
-                const predictions = json.map(p => {
-                    const conf = (p.confidence ?? 0) * 100;
-                    return `${p.model}: ${p.pred} (${conf.toFixed(2)}%)`;
-                }).join(" | ");
+                // Ordenar predicciones por modelo y mostrar confianza
+                const predictions = json
+                    .sort((a, b) => a.model.localeCompare(b.model))
+                    .map(p => {
+                        const conf = (p.confidence ?? 0) * 100;
+                        return `${p.model}: ${p.pred} (${conf.toFixed(2)}%)`;
+                    })
+                    .join(" | ");
                 feedbackEl.innerText = `Predicción en tiempo real: ${predictions}`;
             } else if (json.error) {
                 feedbackEl.innerText = `Error: ${json.error}`;

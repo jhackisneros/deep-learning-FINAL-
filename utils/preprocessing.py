@@ -12,10 +12,10 @@ except AttributeError:
 
 def preprocess_image(image_input, target_size=(28,28), flatten=True):
     """
-    Convierte una imagen (bytes o base64) a un array normalizado listo para Keras.
+    Convierte una imagen (bytes, PIL.Image o base64) a un array normalizado listo para Keras.
 
     Params:
-    - image_input: bytes (archivo) o string base64 ('data:image/png;base64,...')
+    - image_input: bytes, PIL.Image o string base64 ('data:image/png;base64,...')
     - target_size: tupla (alto, ancho)
     - flatten: True para MLP (784,), False para CNN (28,28,1)
 
@@ -26,12 +26,20 @@ def preprocess_image(image_input, target_size=(28,28), flatten=True):
     if isinstance(image_input, str) and image_input.startswith('data:image'):
         header, base64_data = image_input.split(',', 1)
         image_input = base64.b64decode(base64_data)
-    
-    # --- Abrir imagen ---
-    img = Image.open(io.BytesIO(image_input)).convert('L')  # escala de grises
+
+    # --- Convertir bytes a PIL.Image ---
+    if isinstance(image_input, bytes):
+        img = Image.open(io.BytesIO(image_input)).convert('L')
+    elif isinstance(image_input, Image.Image):
+        img = image_input.convert('L')
+    else:
+        raise ValueError("Tipo de entrada no soportado: debe ser bytes, PIL.Image o base64")
+
+    # --- Redimensionar ---
     img = img.resize(target_size, resample_method)
-    
-    arr = np.array(img, dtype=np.float32) / 255.0  # normalizar 0-1
+
+    # --- Normalizar ---
+    arr = np.array(img, dtype=np.float32) / 255.0
 
     if flatten:
         return arr.flatten()  # MLP
@@ -43,7 +51,7 @@ def preprocess_canvas_data(canvas_data, target_size=(28,28), flatten=True):
     Convierte datos de canvas (array 2D o 1D con valores 0-255) a formato listo para Keras.
     
     Params:
-    - canvas_data: array 2D o 1D con valores de 0-255
+    - canvas_data: array 2D o 1D con valores 0-255
     - target_size: tupla (alto, ancho)
     - flatten: True para MLP, False para CNN
 

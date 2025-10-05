@@ -77,11 +77,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (entries.some(e => e.error)) {
                     li.textContent = `Error (${filename}): ${entries.find(e => e.error).error}`;
                 } else {
-                    // Mostrar predicciones de todos los modelos
-                    const text = entries.map(e => {
-                        const conf = (e.confidence ?? 0) * 100;
-                        return `${e.model}: ${e.pred} (${conf.toFixed(2)}%)`;
-                    }).join(" | ");
+                    // Mostrar predicciones de todos los modelos, ordenadas alfabéticamente
+                    const text = entries
+                        .sort((a,b) => a.model.localeCompare(b.model))
+                        .map(e => {
+                            const conf = (e.confidence ?? 0) * 100;
+                            return `${e.model}: ${e.pred} (${conf.toFixed(2)}%)`;
+                        }).join(" | ");
                     li.textContent = `${filename}: ${text}`;
                 }
 

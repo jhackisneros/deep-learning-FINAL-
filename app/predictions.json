@@ -1,5 +1,109 @@
 [
   {
+    "time": "2025-10-05T19:19:19.340919",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 9,
+    "confidence": 0.8859753608703613,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:19:17.335431",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 8,
+    "confidence": 0.610944390296936,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:19:14.303006",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 7,
+    "confidence": 0.8731255531311035,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:19:12.239929",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 8,
+    "confidence": 0.7429630756378174,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:19:10.291220",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 8,
+    "confidence": 0.41971859335899353,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:19:07.953011",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 8,
+    "confidence": 0.6837801933288574,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:19:05.807565",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 4,
+    "confidence": 0.30240264534950256,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:19:03.853082",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 3,
+    "confidence": 0.9949500560760498,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:19:01.325514",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 7,
+    "confidence": 0.751089334487915,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:18:59.629667",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 5,
+    "confidence": 0.37618574500083923,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:18:57.818350",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 4,
+    "confidence": 0.5902454257011414,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:18:55.967791",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 1,
+    "confidence": 0.9539420008659363,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T19:18:52.234456",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 2,
+    "confidence": 0.9722301959991455,
+    "model": "MLP"
+  },
+  {
     "time": "2025-10-05T19:13:01.577691",
     "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
     "filename": null,

@@ -9,7 +9,7 @@ from datetime import datetime
 import numpy as np
 from tensorflow import keras
 
-# ---------------- Configurar ruta absoluta para encontrar utils ----------------
+# ---------------- Configurar ruta absoluta para utils ----------------
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
@@ -26,19 +26,16 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ---------------- Cargar modelos ----------------
 MODEL_PATH = os.path.join('models', 'mnist_compiled_model.keras')
-mlp_model = None
-if os.path.exists(MODEL_PATH):
-    mlp_model = keras.models.load_model(MODEL_PATH, compile=False, safe_mode=False)
+mlp_model = keras.models.load_model(MODEL_PATH, compile=False, safe_mode=False) if os.path.exists(MODEL_PATH) else None
+if mlp_model:
     mlp_model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 else:
-    print(f"⚠️ Warning: modelo MLP no encontrado.")
+    print("⚠️ Warning: modelo MLP no encontrado.")
 
 CNN_MODEL_PATH = os.path.join('models', 'cnn_model.keras')
-cnn_model = None
-if os.path.exists(CNN_MODEL_PATH):
-    cnn_model = keras.models.load_model(CNN_MODEL_PATH)
-else:
-    print(f"⚠️ Warning: modelo CNN no encontrado.")
+cnn_model = keras.models.load_model(CNN_MODEL_PATH) if os.path.exists(CNN_MODEL_PATH) else None
+if not cnn_model:
+    print("⚠️ Warning: modelo CNN no encontrado.")
 
 # ---------------- Métricas CNN ----------------
 CNN_METRICS_PATH = os.path.join('models', 'cnn_metrics.json')
@@ -47,7 +44,7 @@ if os.path.exists(CNN_METRICS_PATH):
     with open(CNN_METRICS_PATH, 'r') as f:
         cnn_metrics = json.load(f)
 
-# ---------------- Log de predicciones ----------------
+# ---------------- Log predicciones ----------------
 PRED_LOG = os.path.join('app', 'predictions.json')
 if not os.path.exists(PRED_LOG):
     with open(PRED_LOG, 'w', encoding='utf-8') as f:
@@ -80,62 +77,55 @@ def get_current_user():
 def sanitize_history(data):
     """Rellena valores faltantes para compatibilidad con JSON viejo"""
     for rec in data:
-        if 'model' not in rec:
-            rec['model'] = 'MLP'
-        if 'confidence' not in rec or rec['confidence'] is None:
-            rec['confidence'] = 0.0
+        rec.setdefault('model', 'MLP')
+        rec.setdefault('confidence', 0.0)
     return data
 
 def calculate_mlp_accuracy(user_history):
-    """Calcula el promedio de confidence para MLP como proxy de accuracy"""
+    """Promedio de confidence para MLP"""
     mlp_confs = [rec['confidence'] for rec in user_history if rec['model'] == 'MLP']
     return round(float(np.mean(mlp_confs)) if mlp_confs else 0, 4)
 
 # ---------------- Predicción ----------------
 def predict_image(image_input, user_id, filename=None):
-    """Predice una imagen con todos los modelos disponibles"""
+    """Predice imagen con MLP y CNN si existen"""
     results = []
 
-    # --- Preprocesar imagen para MLP ---
+    # --- MLP ---
     if mlp_model:
         arr_mlp = preprocess_image(image_input, target_size=(28,28), flatten=True)
         pred_mlp = mlp_model.predict(arr_mlp.reshape(1, -1))
-        label_mlp = int(np.argmax(pred_mlp))
-        conf_mlp = float(np.max(pred_mlp))
-        record_mlp = {
+        results.append({
             'time': datetime.utcnow().isoformat(),
             'user': user_id,
             'filename': filename,
-            'pred': label_mlp,
-            'confidence': conf_mlp,
+            'pred': int(np.argmax(pred_mlp)),
+            'confidence': float(np.max(pred_mlp)),
             'model': 'MLP'
-        }
-        save_prediction_local(record_mlp)
-        results.append(record_mlp)
+        })
+        save_prediction_local(results[-1])
 
-    # --- Preprocesar imagen para CNN ---
+    # --- CNN ---
     if cnn_model:
         arr_cnn = preprocess_image(image_input, target_size=(28,28), flatten=False)
-        pred_cnn = cnn_model.predict(arr_cnn.reshape(1,28,28,1))
-        label_cnn = int(np.argmax(pred_cnn))
-        conf_cnn = float(np.max(pred_cnn))
-        record_cnn = {
+        if arr_cnn.ndim == 3:  # shape (28,28,1)
+            arr_cnn = np.expand_dims(arr_cnn, axis=0)
+        pred_cnn = cnn_model.predict(arr_cnn)
+        results.append({
             'time': datetime.utcnow().isoformat(),
             'user': user_id,
             'filename': filename,
-            'pred': label_cnn,
-            'confidence': conf_cnn,
+            'pred': int(np.argmax(pred_cnn)),
+            'confidence': float(np.max(pred_cnn)),
             'model': 'CNN'
-        }
-        save_prediction_local(record_cnn)
-        results.append(record_cnn)
+        })
+        save_prediction_local(results[-1])
 
     return results
 
 # ---------------- Rutas ----------------
 @app.route('/')
-def index():
-    return render_template('index.html')
+def index(): return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -176,8 +166,7 @@ def my_predictions():
     user_id = get_current_user()
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
-    user_data = [d for d in data if d.get('user') == user_id]
-    user_data = sanitize_history(user_data)
+    user_data = sanitize_history([d for d in data if d.get('user') == user_id])
     return render_template('my_predictions.html', history=user_data)
 
 @app.route('/predict', methods=['POST'])
@@ -211,32 +200,22 @@ def history():
     user_id = get_current_user()
     limit = int(request.args.get('limit', 50))
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
-        data = json.load(fh)
-    data = [d for d in data if d.get('user') == user_id]
-    data = sanitize_history(data)
+        data = sanitize_history([d for d in json.load(fh) if d.get('user') == user_id])
     return jsonify(data[:limit])
 
 @app.route('/export', methods=['GET'])
 def export():
     user_id = get_current_user()
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
-        data = json.load(fh)
-    data = [d for d in data if d.get('user') == user_id]
+        data = [d for d in json.load(fh) if d.get('user') == user_id]
     csv_bytes = export_predictions_to_csv(data)
-    return send_file(
-        io.BytesIO(csv_bytes),
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='predictions_export.csv'
-    )
+    return send_file(io.BytesIO(csv_bytes), mimetype='text/csv', as_attachment=True, download_name='predictions_export.csv')
 
 @app.route('/stats')
 def stats():
     user_id = get_current_user()
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
-        data = json.load(fh)
-    user_data = [d for d in data if d.get('user') == user_id]
-    user_data = sanitize_history(user_data)
+        user_data = sanitize_history([d for d in json.load(fh) if d.get('user') == user_id])
     mlp_acc = calculate_mlp_accuracy(user_data) if mlp_model else None
     cnn_acc = cnn_metrics.get("cnn_test_accuracy") or 0
     return render_template("stats.html", history=user_data, mlp_accuracy=mlp_acc, cnn_accuracy=cnn_acc)
@@ -251,9 +230,7 @@ def generate_qr_route():
 @app.route('/qr_view/<user_id>')
 def qr_view(user_id):
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
-        data = json.load(fh)
-    user_history = [d for d in data if d.get('user') == user_id]
-    user_history = sanitize_history(user_history)
+        user_history = sanitize_history([d for d in json.load(fh) if d.get('user') == user_id])
     return render_template('qr_view.html', history=user_history)
 
 # ---------------- Main ----------------
