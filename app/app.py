@@ -10,25 +10,24 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from utils.preprocessing import preprocess_image
-from utils.qr_utils import generate_qr_image_bytes
+from utils.qr_utils import generate_qr_from_data  # ⚠ cambiado
 from utils.export_utils import export_predictions_to_csv
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = os.path.join('app','uploads')
+app.config['UPLOAD_FOLDER'] = os.path.join('app', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Try to load the model (if exists)
+# --- Cargar modelo si existe ---
 MODEL_PATH = os.path.join('models', 'mnist_compiled_model.keras')
-
 model = None
 if os.path.exists(MODEL_PATH):
     model = keras.models.load_model(MODEL_PATH, compile=False, safe_mode=False)
     model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 else:
-    print(f"Warning: modelo no encontrado en {MODEL_PATH}. Rutas de predicción estarán inactivas hasta entrenar/colocar el modelo.")
+    print(f"Warning: modelo no encontrado en {MODEL_PATH}. Rutas de predicción estarán inactivas.")
 
-PRED_LOG = os.path.join('app','predictions.json')
-# Ensure predictions log exists
+# --- Log de predicciones ---
+PRED_LOG = os.path.join('app', 'predictions.json')
 if not os.path.exists(PRED_LOG):
     with open(PRED_LOG, 'w') as f:
         json.dump([], f)
@@ -93,7 +92,6 @@ def predict():
             'confidence': confidence,
         }
         save_prediction_local(record)
-
         return jsonify({'pred': label, 'confidence': confidence})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -161,22 +159,23 @@ def export():
         download_name='predictions_export.csv'
     )
 
-# ---------------- NUEVO: Página de estadísticas ----------------
+# ---------------- Página de estadísticas ----------------
 @app.route('/stats')
 def stats():
-    """Renderiza una página HTML con todas las estadísticas"""
+    """Renderiza stats.html con todas las predicciones"""
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         history = json.load(fh)
     return render_template("stats.html", history=history)
 
-# ---------------- NUEVO: QR que apunta a /stats ----------------
+# ---------------- QR que contiene predicciones ----------------
 @app.route('/generate_qr', methods=['GET'])
 def generate_qr():
-    """Genera un QR que apunta al endpoint /stats"""
-    stats_url = request.url_root + "stats"
-    img_bytes = generate_qr_image_bytes(stats_url)
+    """Genera un QR con los datos actuales de predicciones"""
+    with open(PRED_LOG, 'r', encoding='utf-8') as fh:
+        history = json.load(fh)
+    # ⚡ Aquí el QR contiene directamente los datos de predicción
+    img_bytes = generate_qr_from_data(history)
     return send_file(io.BytesIO(img_bytes), mimetype='image/png')
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
