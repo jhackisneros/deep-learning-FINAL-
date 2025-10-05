@@ -1,9 +1,25 @@
-// app/realtime.js
+// static/realtime.js
 
 document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.getElementById("canvas-mnist");
     const ctx = canvas.getContext("2d");
     const feedbackEl = document.getElementById("prediction-realtime");
+
+    // --- Detectar darkmode ---
+    const darkmodeLink = document.getElementById("darkmode-css");
+    let isDark = darkmodeLink && !darkmodeLink.disabled;
+
+    function clearCanvas() {
+        ctx.fillStyle = isDark ? "#1e1e1e" : "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+    }
+
+    clearCanvas();
+
+    ctx.strokeStyle = isDark ? "white" : "white";
+    ctx.lineWidth = 15;
+    ctx.lineCap = "round";
 
     let drawing = false;
     let timeoutId = null;
@@ -24,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.beginPath();
         ctx.moveTo(x, y);
 
-        // Llamada al servidor con debounce de 500ms
+        // Debounce 500ms
         if (timeoutId) clearTimeout(timeoutId);
         timeoutId = setTimeout(sendRealtimePrediction, 500);
     }
@@ -48,8 +64,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Botón para limpiar feedback
+    // Botón para limpiar canvas y feedback
     document.getElementById("clear-canvas").addEventListener("click", () => {
+        clearCanvas();
         feedbackEl.innerText = "Predicción en tiempo real: -";
     });
+
+    // --- Actualizar colores si cambia el darkmode dinámicamente ---
+    if (darkmodeLink) {
+        const observer = new MutationObserver(() => {
+            isDark = !darkmodeLink.disabled;
+            ctx.strokeStyle = isDark ? "white" : "white";
+            clearCanvas();
+        });
+        observer.observe(darkmodeLink, { attributes: true, attributeFilter: ["disabled"] });
+    }
 });

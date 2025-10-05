@@ -1,19 +1,23 @@
-// app/static/main.js
+// static/main.js
 document.addEventListener("DOMContentLoaded", () => {
+
+    // --- Detectar darkmode ---
+    const darkmodeLink = document.getElementById("darkmode-css");
+    const isDark = darkmodeLink && !darkmodeLink.disabled;
 
     // --- Canvas MNIST ---
     const canvas = document.getElementById("canvas-mnist");
     const ctx = canvas.getContext("2d");
 
-    // Inicializar canvas negro
     function clearCanvas() {
-        ctx.fillStyle = "black";
+        ctx.fillStyle = isDark ? "#1e1e1e" : "black"; // fondo según modo
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.beginPath();
     }
+
     clearCanvas();
 
-    ctx.strokeStyle = "white"; // color del pincel
+    ctx.strokeStyle = isDark ? "white" : "white"; // pincel
     ctx.lineWidth = 15;
     ctx.lineCap = "round";
 
@@ -31,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         ctx.beginPath();
         ctx.moveTo(x, y);
-        ctx.lineTo(x, y); // solo un punto si no se mueve
+        ctx.lineTo(x, y); // dibuja un punto
         ctx.stroke();
     });
 
@@ -88,4 +92,16 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Error al generar QR: " + err.message);
         }
     });
+
+    // --- Actualizar colores si cambia el darkmode dinámicamente ---
+    if (darkmodeLink) {
+        const observer = new MutationObserver(() => {
+            const dark = !darkmodeLink.disabled;
+            ctx.fillStyle = dark ? "#1e1e1e" : "black";
+            ctx.strokeStyle = dark ? "white" : "white";
+            clearCanvas();
+        });
+        observer.observe(darkmodeLink, { attributes: true, attributeFilter: ["disabled"] });
+    }
+
 });

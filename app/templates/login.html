@@ -42,17 +42,7 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-left">
-            <a href="{{ url_for('index') }}">MNIST AI Demo</a>
-        </div>
-        <div class="navbar-right">
-            <a href="{{ url_for('index') }}">Inicio</a>
-            <a href="{{ url_for('login') }}">Login</a>
-            <a href="{{ url_for('register') }}">Registro</a>
-            <button id="toggle-darkmode-navbar">🌙</button>
-        </div>
-    </nav>
+    {% include 'navbar.html' %}
 
     <!-- Contenido de Login -->
     <main>
