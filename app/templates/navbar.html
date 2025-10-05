@@ -8,7 +8,7 @@
         <a href="{{ url_for('index') }}#demo-mnist">Demo MNIST</a>
         <a href="{{ url_for('index') }}#upload-demo">Prueba IA</a>
         <a href="{{ url_for('stats') }}">Métricas</a>
-        <a href="{{ url_for('generate_qr') }}">Generar QR</a>
+        <a href="{{ url_for('generate_qr_route') }}">Generar QR</a>
 
         {% if session.get('user') %}
             <!-- Usuario logueado -->

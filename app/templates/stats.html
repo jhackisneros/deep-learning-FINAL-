@@ -69,8 +69,8 @@
     <!-- Sección: QR -->
     <section style="text-align:center; margin-top:20px;">
         <h2>Mi QR de Predicciones</h2>
-        <button id="generate-qr-btn" data-url="{{ url_for('generate_qr') }}">Actualizar QR</button>
-        <img id="qr-img" src="{{ url_for('generate_qr') }}" alt="QR Stats">
+        <button id="generate-qr-btn" data-url="{{ url_for('generate_qr_route') }}">Actualizar QR</button>
+        <img id="qr-img" src="{{ url_for('generate_qr_route') }}" alt="QR Stats">
         <p>Escanea este código para ver <b>solo tus predicciones</b> en otro dispositivo.</p>
     </section>
 
