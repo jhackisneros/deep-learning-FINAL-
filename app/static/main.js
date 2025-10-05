@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     clearCanvas();
 
-    ctx.strokeStyle = isDark ? "white" : "white"; // pincel
+    ctx.strokeStyle = "white"; // pincel siempre blanco
     ctx.lineWidth = 15;
     ctx.lineCap = "round";
 
@@ -33,10 +33,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        ctx.lineTo(x, y);
+        ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(x, y);
-        ctx.lineTo(x, y); // dibuja un punto
-        ctx.stroke();
     });
 
     document.getElementById("clear-canvas").addEventListener("click", clearCanvas);
@@ -73,10 +73,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 const entries = grouped[filename];
                 const li = document.createElement("li");
 
+                // Mostrar errores si existen
                 if (entries.some(e => e.error)) {
                     li.textContent = `Error (${filename}): ${entries.find(e => e.error).error}`;
                 } else {
-                    const text = entries.map(e => `${e.model}: Predicción ${e.pred} (Confianza ${(e.confidence*100).toFixed(2)}%)`).join(" | ");
+                    // Mostrar predicciones de todos los modelos
+                    const text = entries.map(e => {
+                        const conf = (e.confidence ?? 0) * 100;
+                        return `${e.model}: ${e.pred} (${conf.toFixed(2)}%)`;
+                    }).join(" | ");
                     li.textContent = `${filename}: ${text}`;
                 }
 
@@ -101,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const observer = new MutationObserver(() => {
             isDark = !darkmodeLink.disabled;
             ctx.fillStyle = isDark ? "#1e1e1e" : "black";
-            ctx.strokeStyle = isDark ? "white" : "white";
+            ctx.strokeStyle = "white";
             clearCanvas();
         });
         observer.observe(darkmodeLink, { attributes: true, attributeFilter: ["disabled"] });

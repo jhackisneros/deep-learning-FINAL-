@@ -56,10 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const json = await res.json();
 
             if (Array.isArray(json) && json.length > 0) {
-                // Mostrar predicciones de cada modelo
+                // Mostrar predicciones de cada modelo de forma ordenada
                 const predictions = json.map(p => {
                     const conf = (p.confidence ?? 0) * 100;
-                    return `${p.model}: ${p.pred} (Confianza: ${conf.toFixed(2)}%)`;
+                    return `${p.model}: ${p.pred} (${conf.toFixed(2)}%)`;
                 }).join(" | ");
                 feedbackEl.innerText = `Predicción en tiempo real: ${predictions}`;
             } else if (json.error) {
