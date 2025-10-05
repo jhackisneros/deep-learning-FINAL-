@@ -13,31 +13,53 @@ except AttributeError:
 def preprocess_image(image_input, target_size=(28,28), flatten=True):
     """
     Convierte una imagen (bytes o base64) a un array normalizado listo para Keras.
+
+    Params:
+    - image_input: bytes (archivo) o string base64 ('data:image/png;base64,...')
+    - target_size: tupla (alto, ancho)
+    - flatten: True para MLP (784,), False para CNN (28,28,1)
+
+    Returns:
+    - np.array listo para modelo MLP o CNN
     """
-    # Si es base64 tipo 'data:image/png;base64,...'
+    # --- Detectar base64 ---
     if isinstance(image_input, str) and image_input.startswith('data:image'):
         header, base64_data = image_input.split(',', 1)
         image_input = base64.b64decode(base64_data)
     
-    img = Image.open(io.BytesIO(image_input)).convert('L')
+    # --- Abrir imagen ---
+    img = Image.open(io.BytesIO(image_input)).convert('L')  # escala de grises
     img = img.resize(target_size, resample_method)
-    img_array = np.array(img, dtype=np.float32) / 255.0
+    
+    arr = np.array(img, dtype=np.float32) / 255.0  # normalizar 0-1
 
     if flatten:
-        img_array = img_array.flatten()
-    return img_array
+        return arr.flatten()  # MLP
+    else:
+        return arr[..., np.newaxis]  # CNN (28,28,1)
 
 def preprocess_canvas_data(canvas_data, target_size=(28,28), flatten=True):
     """
-    Convierte datos de canvas (p. ej. array de píxeles) a formato listo para Keras.
-    canvas_data: array 2D o 1D con valores 0-255
+    Convierte datos de canvas (array 2D o 1D con valores 0-255) a formato listo para Keras.
+    
+    Params:
+    - canvas_data: array 2D o 1D con valores de 0-255
+    - target_size: tupla (alto, ancho)
+    - flatten: True para MLP, False para CNN
+
+    Returns:
+    - np.array listo para modelo MLP o CNN
     """
     arr = np.array(canvas_data, dtype=np.float32)
     if arr.max() > 1:
         arr /= 255.0  # normalizar
+
     img = Image.fromarray((arr*255).astype(np.uint8)).convert('L')
     img = img.resize(target_size, resample_method)
+    
     img_array = np.array(img, dtype=np.float32)/255.0
+
     if flatten:
-        img_array = img_array.flatten()
-    return img_array
+        return img_array.flatten()
+    else:
+        return img_array[..., np.newaxis]
