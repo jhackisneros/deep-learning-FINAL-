@@ -5,19 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estadísticas de Mis Predicciones</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='darkmode.css') }}" id="darkmode-css" disabled>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        section { max-width: 800px; margin: auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #eee; }
+        img { display: block; margin: 20px auto; max-width: 200px; }
+        .user-actions { text-align: center; margin-bottom: 20px; }
+        .user-actions a { margin: 0 10px; text-decoration: none; font-weight: bold; color: #222; }
+        .user-actions a:hover { color: #00bfff; }
+    </style>
 </head>
 <body data-history='{{ history|tojson }}'>
-    <header>
-        <h1>📊 Mis Predicciones MNIST</h1>
-    </header>
+    <!-- Navbar -->
+    {% include 'navbar.html' %}
 
+    <!-- Acciones del usuario -->
+    <div class="user-actions">
+        {% if session.get('user') %}
+            <a href="{{ url_for('profile') }}">Perfil</a>
+            <a href="{{ url_for('my_predictions') }}">Mis Predicciones</a>
+            <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}">Registro</a>
+        {% endif %}
+    </div>
+
+    <!-- Sección: Gráficas -->
     <section>
-        <h2>Gráficas</h2>
+        <h2>Gráficas de Mis Predicciones</h2>
         <canvas id="accuracy-chart" height="200"></canvas>
         <canvas id="loss-chart" height="200" style="margin-top:20px;"></canvas>
     </section>
 
+    <!-- Sección: Historial -->
     <section>
         <h2>Historial de Predicciones (solo mío)</h2>
         <table>
@@ -42,16 +66,19 @@
         </table>
     </section>
 
+    <!-- Sección: QR -->
     <section style="text-align:center; margin-top:20px;">
-        <h2>Mi QR de predicciones</h2>
-        <img src="{{ url_for('generate_qr') }}" alt="QR Stats">
+        <h2>Mi QR de Predicciones</h2>
+        <button id="generate-qr-btn" data-url="{{ url_for('generate_qr') }}">Actualizar QR</button>
+        <img id="qr-img" src="{{ url_for('generate_qr') }}" alt="QR Stats">
         <p>Escanea este código para ver <b>solo tus predicciones</b> en otro dispositivo.</p>
     </section>
 
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='darkmode.js') }}"></script>
     <script>
-        // Tomar datos desde el atributo data-history
+        // Charts dinámicos
         const historyData = JSON.parse(document.body.dataset.history);
-
         const labels = historyData.map((_, i) => i + 1);
         const accData = historyData.map(d => d.confidence ?? 0);
         const lossData = historyData.map(d => 1 - (d.confidence ?? 0));
@@ -61,40 +88,22 @@
 
         new Chart(ctxAcc, {
             type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Precisión (Accuracy)',
-                    data: accData,
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: { y: { min: 0, max: 1 } }
-            }
+            data: { labels, datasets: [{ label: 'Precisión (Accuracy)', data: accData, borderColor: 'rgba(54,162,235,1)', backgroundColor: 'rgba(54,162,235,0.2)', fill: true, tension: 0.3 }] },
+            options: { responsive: true, scales: { y: { min: 0, max: 1 } } }
         });
 
         new Chart(ctxLoss, {
             type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Pérdida (Loss)',
-                    data: lossData,
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    backgroundColor: 'rgba(230, 104, 131, 0.2)',
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true } }
-            }
+            data: { labels, datasets: [{ label: 'Pérdida (Loss)', data: lossData, borderColor: 'rgba(255,99,132,1)', backgroundColor: 'rgba(230,104,131,0.2)', fill: true, tension: 0.3 }] },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        // QR dinámico
+        const qrBtn = document.getElementById('generate-qr-btn');
+        qrBtn.addEventListener('click', () => {
+            const qrImg = document.getElementById('qr-img');
+            const url = qrBtn.dataset.url;
+            qrImg.src = url + '?t=' + new Date().getTime(); // evitar cache
         });
     </script>
 </body>

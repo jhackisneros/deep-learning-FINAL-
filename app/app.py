@@ -3,7 +3,7 @@ import sys
 import os
 import uuid
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from flask import Flask, request, jsonify, render_template, send_file, session
+from flask import Flask, request, jsonify, render_template, send_file, session, redirect, url_for
 import io
 import json
 from datetime import datetime
@@ -33,6 +33,9 @@ if not os.path.exists(PRED_LOG):
     with open(PRED_LOG, 'w', encoding='utf-8') as f:
         json.dump([], f)
 
+# --- Usuarios ficticios para demo (login simple sin DB) ---
+USERS = {}  # {'username': 'password'}
+
 def save_prediction_local(record: dict):
     """Guarda la predicción localmente en predictions.json"""
     with open(PRED_LOG, 'r+', encoding='utf-8') as fh:
@@ -46,7 +49,9 @@ def save_prediction_local(record: dict):
         fh.truncate()
 
 def get_current_user():
-    """Devuelve un ID único para cada usuario anónimo"""
+    """Devuelve el nombre de usuario si está logueado, si no un ID anónimo"""
+    if session.get('user'):
+        return session['user']
     if "user_id" not in session:
         session["user_id"] = str(uuid.uuid4())
     return session["user_id"]
@@ -55,6 +60,49 @@ def get_current_user():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# ---------------- Login / Register / Logout ----------------
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if USERS.get(username) == password:
+            session['user'] = username
+            return redirect(url_for('index'))
+        return render_template('login.html', error="Usuario o contraseña incorrectos")
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username in USERS:
+            return render_template('register.html', error="Usuario ya existe")
+        USERS[username] = password
+        session['user'] = username
+        return redirect(url_for('index'))
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect(url_for('index'))
+
+@app.route('/profile')
+def profile():
+    if not session.get('user'):
+        return redirect(url_for('login'))
+    return render_template('profile.html', user=session['user'])
+
+@app.route('/my_predictions')
+def my_predictions():
+    user_id = get_current_user()
+    with open(PRED_LOG, 'r', encoding='utf-8') as fh:
+        data = json.load(fh)
+    user_data = [d for d in data if d.get('user') == user_id]
+    return render_template('my_predictions.html', history=user_data)
 
 # ---------------- Rutas de predicción ----------------
 @app.route('/predict', methods=['POST'])
@@ -155,18 +203,15 @@ def export():
 # ---------------- Página de estadísticas ----------------
 @app.route('/stats')
 def stats():
-    """Renderiza stats.html con predicciones SOLO del usuario actual"""
     user_id = get_current_user()
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
-
     data = [d for d in data if d.get('user') == user_id]
     return render_template("stats.html", history=data)
 
 # ---------------- QR de estadísticas ----------------
 @app.route('/generate_qr', methods=['GET'])
-def generate_qr():
-    """Genera un QR con las predicciones SOLO del usuario actual"""
+def generate_qr_route():
     user_id = get_current_user()
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
