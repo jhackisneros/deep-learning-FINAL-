@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estadísticas de Predicciones</title>
+    <title>Estadísticas de Mis Predicciones</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body data-history='{{ history|tojson }}'>
     <header>
-        <h1>📊 Estadísticas de Predicciones MNIST</h1>
+        <h1>📊 Mis Predicciones MNIST</h1>
     </header>
 
     <section>
@@ -19,12 +19,11 @@
     </section>
 
     <section>
-        <h2>Historial de Predicciones</h2>
+        <h2>Historial de Predicciones (solo mío)</h2>
         <table>
             <thead>
                 <tr>
                     <th>Hora (UTC)</th>
-                    <th>Usuario</th>
                     <th>Archivo/Canvas</th>
                     <th>Predicción</th>
                     <th>Confianza</th>
@@ -34,7 +33,6 @@
                 {% for rec in history %}
                 <tr>
                     <td>{{ rec.time }}</td>
-                    <td>{{ rec.user or '-' }}</td>
                     <td>{{ rec.filename or 'Canvas' }}</td>
                     <td>{{ rec.pred }}</td>
                     <td>{{ '%.2f' % (rec.confidence*100) }}%</td>
@@ -45,9 +43,9 @@
     </section>
 
     <section style="text-align:center; margin-top:20px;">
-        <h2>QR para compartir estadísticas</h2>
+        <h2>Mi QR de predicciones</h2>
         <img src="{{ url_for('generate_qr') }}" alt="QR Stats">
-        <p>Escanea este código para abrir esta página desde cualquier dispositivo.</p>
+        <p>Escanea este código para ver <b>solo tus predicciones</b> en otro dispositivo.</p>
     </section>
 
     <script>
@@ -61,7 +59,7 @@
         const ctxAcc = document.getElementById('accuracy-chart').getContext('2d');
         const ctxLoss = document.getElementById('loss-chart').getContext('2d');
 
-        const accChart = new Chart(ctxAcc, {
+        new Chart(ctxAcc, {
             type: 'line',
             data: {
                 labels: labels,
@@ -80,7 +78,7 @@
             }
         });
 
-        const lossChart = new Chart(ctxLoss, {
+        new Chart(ctxLoss, {
             type: 'line',
             data: {
                 labels: labels,
