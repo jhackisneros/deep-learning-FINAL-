@@ -10,11 +10,11 @@ from datetime import datetime
 import numpy as np
 from tensorflow import keras
 from utils.preprocessing import preprocess_image
-from utils.qr_utils import generate_qr_from_data
+from utils.qr_utils import generate_qr_from_url
 from utils.export_utils import export_predictions_to_csv
 
 app = Flask(__name__)
-app.secret_key = "super_secret_key"  # ⚡ necesario para manejar sesión anónima
+app.secret_key = "super_secret_key"
 app.config['UPLOAD_FOLDER'] = os.path.join('app', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -25,7 +25,7 @@ if os.path.exists(MODEL_PATH):
     model = keras.models.load_model(MODEL_PATH, compile=False, safe_mode=False)
     model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 else:
-    print(f"⚠️ Warning: modelo no encontrado en {MODEL_PATH}. Rutas de predicción estarán inactivas.")
+    print(f"⚠️ Warning: modelo no encontrado en {MODEL_PATH}. Rutas de predicción inactivas.")
 
 # --- Log de predicciones ---
 PRED_LOG = os.path.join('app', 'predictions.json')
@@ -33,7 +33,7 @@ if not os.path.exists(PRED_LOG):
     with open(PRED_LOG, 'w', encoding='utf-8') as f:
         json.dump([], f)
 
-# --- Usuarios ficticios para demo (login simple sin DB) ---
+# --- Usuarios ficticios para demo ---
 USERS = {}  # {'username': 'password'}
 
 def save_prediction_local(record: dict):
@@ -114,11 +114,9 @@ def predict():
     if not data or 'image' not in data:
         return jsonify({'error': 'No image provided'}), 400
 
-    img_input = data['image']
     user_id = get_current_user()
-
     try:
-        arr = preprocess_image(img_input, target_size=(28,28), flatten=True)
+        arr = preprocess_image(data['image'], target_size=(28,28), flatten=True)
         pred = model.predict(arr.reshape(1, -1))
         label = int(np.argmax(pred))
         confidence = float(np.max(pred))
@@ -126,7 +124,7 @@ def predict():
         record = {
             'time': datetime.utcnow().isoformat(),
             'user': user_id,
-            'filename': None,  # canvas
+            'filename': None,
             'pred': label,
             'confidence': confidence,
         }
@@ -149,8 +147,7 @@ def predict_batch():
 
     for f in files:
         try:
-            img_bytes = f.read()
-            arr = preprocess_image(img_bytes, target_size=(28,28), flatten=True)
+            arr = preprocess_image(f.read(), target_size=(28,28), flatten=True)
             pred = model.predict(arr.reshape(1, -1))
             label = int(np.argmax(pred))
             confidence = float(np.max(pred))
@@ -173,13 +170,9 @@ def predict_batch():
 def history():
     user_id = get_current_user()
     limit = int(request.args.get('limit', 50))
-
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
-
-    # Filtrar solo por el usuario actual
     data = [d for d in data if d.get('user') == user_id]
-
     return jsonify(data[:limit])
 
 # ---------------- Exportación CSV ----------------
@@ -188,10 +181,7 @@ def export():
     user_id = get_current_user()
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
-
-    # Exportar solo las predicciones del usuario actual
     data = [d for d in data if d.get('user') == user_id]
-
     csv_bytes = export_predictions_to_csv(data)
     return send_file(
         io.BytesIO(csv_bytes),
@@ -212,15 +202,20 @@ def stats():
 # ---------------- QR de estadísticas ----------------
 @app.route('/generate_qr', methods=['GET'])
 def generate_qr_route():
+    """Genera un QR apuntando a la página QR-view del usuario"""
     user_id = get_current_user()
+    url = url_for('qr_view', user_id=user_id, _external=True)
+    img_bytes = generate_qr_from_url(url)
+    return send_file(io.BytesIO(img_bytes), mimetype='image/png')
+
+# ---------------- Página QR View ----------------
+@app.route('/qr_view/<user_id>')
+def qr_view(user_id):
+    """Muestra la página HTML bonita de predicciones para un usuario"""
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
-
-    # Filtrar predicciones de este usuario
     user_history = [d for d in data if d.get('user') == user_id]
-
-    img_bytes = generate_qr_from_data(user_history)
-    return send_file(io.BytesIO(img_bytes), mimetype='image/png')
+    return render_template('qr_view.html', history=user_history)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

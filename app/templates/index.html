@@ -26,11 +26,21 @@
         canvas {
             display: block;
             margin: 20px auto;
+            max-width: 100%;
         }
         button {
             cursor: pointer;
-            padding: 10px 15px;
+            padding: 10px 20px;
             margin: 5px;
+            font-weight: bold;
+            border-radius: 5px;
+            border: none;
+            background-color: #00bfff;
+            color: white;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #009acd;
         }
         #qr-generator img {
             display: block;
@@ -49,6 +59,7 @@
             text-decoration: none;
             color: #222;
             font-weight: bold;
+            transition: color 0.2s;
         }
         .user-actions a:hover {
             color: #00bfff;
@@ -112,12 +123,13 @@
     <script src="{{ url_for('static', filename='realtime.js') }}"></script>
     <script src="{{ url_for('static', filename='main.js') }}"></script>
     <script>
-        // Generar QR dinámicamente
+        // Botón QR dinámico
         const qrBtn = document.getElementById('generate-qr-btn');
         qrBtn.addEventListener('click', () => {
             const qrImg = document.getElementById('qr-img');
             const url = qrBtn.dataset.url;
-            qrImg.src = url + '?t=' + new Date().getTime(); // evita cache
+            // Añadimos timestamp para evitar cache
+            qrImg.src = url + '?t=' + new Date().getTime();
         });
     </script>
 </body>
