@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas de Predicciones</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body data-history='{{ history|tojson }}'>
+    <header>
+        <h1>📊 Estadísticas de Predicciones MNIST</h1>
+    </header>
+
+    <section>
+        <h2>Gráficas</h2>
+        <canvas id="accuracy-chart" height="200"></canvas>
+        <canvas id="loss-chart" height="200" style="margin-top:20px;"></canvas>
+    </section>
+
+    <section>
+        <h2>Historial de Predicciones</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Hora (UTC)</th>
+                    <th>Usuario</th>
+                    <th>Archivo/Canvas</th>
+                    <th>Predicción</th>
+                    <th>Confianza</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rec in history %}
+                <tr>
+                    <td>{{ rec.time }}</td>
+                    <td>{{ rec.user or '-' }}</td>
+                    <td>{{ rec.filename or 'Canvas' }}</td>
+                    <td>{{ rec.pred }}</td>
+                    <td>{{ '%.2f' % (rec.confidence*100) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section style="text-align:center; margin-top:20px;">
+        <h2>QR para compartir estadísticas</h2>
+        <img src="{{ url_for('generate_qr') }}" alt="QR Stats">
+        <p>Escanea este código para abrir esta página desde cualquier dispositivo.</p>
+    </section>
+
+    <script>
+        // Tomar datos desde el atributo data-history
+        const historyData = JSON.parse(document.body.dataset.history);
+
+        const labels = historyData.map((_, i) => i + 1);
+        const accData = historyData.map(d => d.confidence ?? 0);
+        const lossData = historyData.map(d => 1 - (d.confidence ?? 0));
+
+        const ctxAcc = document.getElementById('accuracy-chart').getContext('2d');
+        const ctxLoss = document.getElementById('loss-chart').getContext('2d');
+
+        const accChart = new Chart(ctxAcc, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Precisión (Accuracy)',
+                    data: accData,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { min: 0, max: 1 } }
+            }
+        });
+
+        const lossChart = new Chart(ctxLoss, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Pérdida (Loss)',
+                    data: lossData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(230, 104, 131, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    </script>
+</body>
+</html>

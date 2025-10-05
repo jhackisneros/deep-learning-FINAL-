@@ -3,7 +3,6 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from flask import Flask, request, jsonify, render_template, send_file, redirect, url_for
-import os
 import io
 import json
 from datetime import datetime
@@ -51,34 +50,26 @@ def save_prediction_local(record: dict):
 def index():
     return render_template('index.html')
 
-
 # ---------------- Rutas de autenticación ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        # Lógica de autenticación temporal
-        # Para pruebas, simplemente redirigimos al index
         return redirect(url_for('index'))
     return render_template('login.html')
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        # Lógica de registro temporal
-        # Para pruebas, simplemente redirigimos al index
         return redirect(url_for('index'))
     return render_template('register.html')
-
 
 # ---------------- Rutas de predicción ----------------
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Recibe JSON {image: 'data:image/png;base64,...', user: 'username' (optional)}"""
     if model is None:
         return jsonify({'error': 'Modelo no cargado'}), 500
 
@@ -107,10 +98,8 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/predict_batch', methods=['POST'])
 def predict_batch():
-    """Recibe archivos via form-data (files). Retorna lista de predicciones."""
     if model is None:
         return jsonify({'error': 'Modelo no cargado'}), 500
 
@@ -139,10 +128,8 @@ def predict_batch():
 
     return jsonify(results)
 
-
 @app.route('/history', methods=['GET'])
 def history():
-    """Devuelve historial filtrable por query params: user, pred, limit"""
     user = request.args.get('user')
     pred = request.args.get('pred')
     limit = int(request.args.get('limit', 50))
@@ -150,7 +137,6 @@ def history():
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
 
-    # Apply filters
     if user:
         data = [d for d in data if d.get('user') == user]
     if pred is not None:
@@ -162,10 +148,8 @@ def history():
 
     return jsonify(data[:limit])
 
-
 @app.route('/export', methods=['GET'])
 def export():
-    """Exporta las predicciones a CSV y devuelve como attachment."""
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
 
@@ -177,22 +161,22 @@ def export():
         download_name='predictions_export.csv'
     )
 
+# ---------------- NUEVO: Página de estadísticas ----------------
+@app.route('/stats')
+def stats():
+    """Renderiza una página HTML con todas las estadísticas"""
+    with open(PRED_LOG, 'r', encoding='utf-8') as fh:
+        history = json.load(fh)
+    return render_template("stats.html", history=history)
 
-@app.route('/generate_qr', methods=['POST'])
+# ---------------- NUEVO: QR que apunta a /stats ----------------
+@app.route('/generate_qr', methods=['GET'])
 def generate_qr():
-    """Genera un QR a partir de un JSON {url: 'https://...' } o texto y devuelve la imagen PNG."""
-    payload = request.get_json()
-    if not payload:
-        return jsonify({'error': 'No payload'}), 400
-
-    text = payload.get('url') or payload.get('text')
-    if not text:
-        return jsonify({'error': 'No url/text provided'}), 400
-
-    img_bytes = generate_qr_image_bytes(text)
+    """Genera un QR que apunta al endpoint /stats"""
+    stats_url = request.url_root + "stats"
+    img_bytes = generate_qr_image_bytes(stats_url)
     return send_file(io.BytesIO(img_bytes), mimetype='image/png')
 
 
 if __name__ == '__main__':
-    # Development server
     app.run(host='0.0.0.0', port=5000, debug=True)
