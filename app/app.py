@@ -10,7 +10,7 @@ from datetime import datetime
 import numpy as np
 from tensorflow import keras
 from utils.preprocessing import preprocess_image
-from utils.qr_utils import generate_qr_from_url
+from utils.qr_utils import generate_qr_from_data  # <-- Cambiado
 from utils.export_utils import export_predictions_to_csv
 
 app = Flask(__name__)
@@ -202,10 +202,14 @@ def stats():
 # ---------------- QR de estadísticas ----------------
 @app.route('/generate_qr', methods=['GET'])
 def generate_qr_route():
-    """Genera un QR apuntando a la página QR-view del usuario"""
+    """Genera un QR con un HTML de las últimas predicciones del usuario"""
     user_id = get_current_user()
-    url = url_for('qr_view', user_id=user_id, _external=True)
-    img_bytes = generate_qr_from_url(url)
+    with open(PRED_LOG, 'r', encoding='utf-8') as fh:
+        data = json.load(fh)
+    user_history = [d for d in data if d.get('user') == user_id]
+
+    # Generar QR con HTML
+    img_bytes = generate_qr_from_data(user_history)
     return send_file(io.BytesIO(img_bytes), mimetype='image/png')
 
 # ---------------- Página QR View ----------------
