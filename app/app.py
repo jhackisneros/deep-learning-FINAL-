@@ -2,7 +2,6 @@
 import sys
 import os
 import uuid
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from flask import Flask, request, jsonify, render_template, send_file, session, redirect, url_for
 import io
 import json
@@ -52,7 +51,7 @@ USERS = {}
 
 # ---------------- Helpers ----------------
 def save_prediction_local(record: dict):
-    """Guarda predicción en predictions.json"""
+    """Guarda predicción en el log local"""
     with open(PRED_LOG, 'r+', encoding='utf-8') as fh:
         try:
             data = json.load(fh)
@@ -64,7 +63,7 @@ def save_prediction_local(record: dict):
         fh.truncate()
 
 def get_current_user():
-    """Devuelve usuario logueado o ID anónimo"""
+    """Devuelve ID del usuario (logueado o anónimo)"""
     if session.get('user'):
         return session['user']
     if "user_id" not in session:
@@ -80,7 +79,12 @@ def sanitize_history(data):
             rec['confidence'] = 0.0
     return data
 
-# ---------------- Rutas principales ----------------
+def calculate_mlp_accuracy(user_history):
+    """Calcula el promedio de confidence para MLP como proxy de accuracy"""
+    mlp_confs = [rec['confidence'] for rec in user_history if rec['model'] == 'MLP']
+    return round(float(np.mean(mlp_confs)) if mlp_confs else 0, 4)
+
+# ---------------- Rutas ----------------
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -129,46 +133,49 @@ def my_predictions():
     return render_template('my_predictions.html', history=user_data)
 
 # ---------------- Predicciones ----------------
+def predict_image(arr, user_id, filename=None):
+    results = []
+    # MLP
+    if mlp_model:
+        pred_mlp = mlp_model.predict(arr.reshape(1, -1))
+        label_mlp = int(np.argmax(pred_mlp))
+        conf_mlp = float(np.max(pred_mlp))
+        record_mlp = {
+            'time': datetime.utcnow().isoformat(),
+            'user': user_id,
+            'filename': filename,
+            'pred': label_mlp,
+            'confidence': conf_mlp,
+            'model': 'MLP'
+        }
+        save_prediction_local(record_mlp)
+        results.append(record_mlp)
+    # CNN
+    if cnn_model:
+        pred_cnn = cnn_model.predict(arr.reshape(1,28,28,1))
+        label_cnn = int(np.argmax(pred_cnn))
+        conf_cnn = float(np.max(pred_cnn))
+        record_cnn = {
+            'time': datetime.utcnow().isoformat(),
+            'user': user_id,
+            'filename': filename,
+            'pred': label_cnn,
+            'confidence': conf_cnn,
+            'model': 'CNN'
+        }
+        save_prediction_local(record_cnn)
+        results.append(record_cnn)
+    return results
+
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.get_json()
     if not data or 'image' not in data:
         return jsonify({'error': 'No image provided'}), 400
     user_id = get_current_user()
-
-    results = []
     try:
         arr = preprocess_image(data['image'], target_size=(28,28), flatten=True)
-        if mlp_model:
-            pred_mlp = mlp_model.predict(arr.reshape(1, -1))
-            label_mlp = int(np.argmax(pred_mlp))
-            conf_mlp = float(np.max(pred_mlp))
-            record_mlp = {
-                'time': datetime.utcnow().isoformat(),
-                'user': user_id,
-                'filename': None,
-                'pred': label_mlp,
-                'confidence': conf_mlp,
-                'model': 'MLP'
-            }
-            save_prediction_local(record_mlp)
-            results.append(record_mlp)
-
-        if cnn_model:
-            pred_cnn = cnn_model.predict(arr.reshape(1,28,28,1))
-            label_cnn = int(np.argmax(pred_cnn))
-            conf_cnn = float(np.max(pred_cnn))
-            record_cnn = {
-                'time': datetime.utcnow().isoformat(),
-                'user': user_id,
-                'filename': None,
-                'pred': label_cnn,
-                'confidence': conf_cnn,
-                'model': 'CNN'
-            }
-            save_prediction_local(record_cnn)
-            results.append(record_cnn)
-
+        results = predict_image(arr, user_id)
         return jsonify(results)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -180,45 +187,15 @@ def predict_batch():
         return jsonify({'error': 'No files provided'}), 400
     user_id = get_current_user()
     results = []
-
     for f in files:
         try:
             arr = preprocess_image(f.read(), target_size=(28,28), flatten=True)
-            # MLP
-            if mlp_model:
-                pred_mlp = mlp_model.predict(arr.reshape(1, -1))
-                label_mlp = int(np.argmax(pred_mlp))
-                conf_mlp = float(np.max(pred_mlp))
-                record_mlp = {
-                    'time': datetime.utcnow().isoformat(),
-                    'user': user_id,
-                    'filename': f.filename,
-                    'pred': label_mlp,
-                    'confidence': conf_mlp,
-                    'model': 'MLP'
-                }
-                save_prediction_local(record_mlp)
-                results.append(record_mlp)
-            # CNN
-            if cnn_model:
-                pred_cnn = cnn_model.predict(arr.reshape(1,28,28,1))
-                label_cnn = int(np.argmax(pred_cnn))
-                conf_cnn = float(np.max(pred_cnn))
-                record_cnn = {
-                    'time': datetime.utcnow().isoformat(),
-                    'user': user_id,
-                    'filename': f.filename,
-                    'pred': label_cnn,
-                    'confidence': conf_cnn,
-                    'model': 'CNN'
-                }
-                save_prediction_local(record_cnn)
-                results.append(record_cnn)
+            results.extend(predict_image(arr, user_id, filename=f.filename))
         except Exception as e:
             results.append({'filename': getattr(f, 'filename', None), 'error': str(e)})
     return jsonify(results)
 
-# ---------------- Historial y stats ----------------
+# ---------------- Historial y export ----------------
 @app.route('/history', methods=['GET'])
 def history():
     user_id = get_current_user()
@@ -248,13 +225,13 @@ def stats():
     user_id = get_current_user()
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
-    data = [d for d in data if d.get('user') == user_id]
-    data = sanitize_history(data)
+    user_data = [d for d in data if d.get('user') == user_id]
+    user_data = sanitize_history(user_data)
 
-    mlp_acc = "Ya calculada en Colab" if mlp_model else None
-    cnn_acc = cnn_metrics.get("cnn_test_accuracy")
+    mlp_acc = calculate_mlp_accuracy(user_data) if mlp_model else None
+    cnn_acc = cnn_metrics.get("cnn_test_accuracy") or 0
 
-    return render_template("stats.html", history=data, mlp_accuracy=mlp_acc, cnn_accuracy=cnn_acc)
+    return render_template("stats.html", history=user_data, mlp_accuracy=mlp_acc, cnn_accuracy=cnn_acc)
 
 # ---------------- QR ----------------
 @app.route('/generate_qr', methods=['GET'])

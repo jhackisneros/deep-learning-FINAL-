@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     clearCanvas();
 
-    ctx.strokeStyle = isDark ? "white" : "white";
+    ctx.strokeStyle = "white";
     ctx.lineWidth = 15;
     ctx.lineCap = "round";
 
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.beginPath();
         ctx.moveTo(x, y);
 
-        // Debounce 500ms
+        // Debounce 500ms para no saturar el servidor
         if (timeoutId) clearTimeout(timeoutId);
         timeoutId = setTimeout(sendRealtimePrediction, 500);
     }
@@ -54,10 +54,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify({ image: dataURL })
             });
             const json = await res.json();
-            if (json.pred !== undefined) {
-                feedbackEl.innerText = `Predicción en tiempo real: ${json.pred} (Confianza: ${(json.confidence*100).toFixed(2)}%)`;
-            } else {
+
+            if (Array.isArray(json) && json.length > 0) {
+                // Mostrar predicciones de cada modelo
+                const predictions = json.map(p => {
+                    const conf = (p.confidence ?? 0) * 100;
+                    return `${p.model}: ${p.pred} (Confianza: ${conf.toFixed(2)}%)`;
+                }).join(" | ");
+                feedbackEl.innerText = `Predicción en tiempo real: ${predictions}`;
+            } else if (json.error) {
                 feedbackEl.innerText = `Error: ${json.error}`;
+            } else {
+                feedbackEl.innerText = "Predicción no disponible";
             }
         } catch (err) {
             feedbackEl.innerText = `Error conexión: ${err.message}`;
@@ -74,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (darkmodeLink) {
         const observer = new MutationObserver(() => {
             isDark = !darkmodeLink.disabled;
-            ctx.strokeStyle = isDark ? "white" : "white";
             clearCanvas();
         });
         observer.observe(darkmodeLink, { attributes: true, attributeFilter: ["disabled"] });

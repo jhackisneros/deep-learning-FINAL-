@@ -1,5 +1,29 @@
 [
   {
+    "time": "2025-10-05T18:57:11.282115",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 3,
+    "confidence": 0.32220083475112915,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:57:08.874581",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 2,
+    "confidence": 0.9649227261543274,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:57:06.345467",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 8,
+    "confidence": 0.9090173244476318,
+    "model": "MLP"
+  },
+  {
     "time": "2025-10-05T18:52:51.296157",
     "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
     "filename": null,

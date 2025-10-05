@@ -20,7 +20,7 @@
         .model-stats p { font-size: 1.2em; margin: 5px 0; }
     </style>
 </head>
-<body data-history='{{ history|tojson }}' data-mlp="{{ mlp_accuracy or 0 }}" data-cnn="{{ cnn_accuracy or 0 }}">
+<body data-history='{{ history|tojson }}' data-mlp="{{ mlp_accuracy|default(0) }}" data-cnn="{{ cnn_accuracy|default(0) }}">
     <!-- Navbar -->
     {% include 'navbar.html' %}
 
@@ -39,8 +39,8 @@
     <!-- Sección: Precisión de los modelos -->
     <section class="model-stats">
         <h2>Precisión de Modelos</h2>
-        <p>MLP: {{ mlp_accuracy or 'No disponible' }}</p>
-        <p>CNN: {{ cnn_accuracy or 'No disponible' }}</p>
+        <p>MLP: {{ mlp_accuracy|default('No disponible') }}</p>
+        <p>CNN: {{ cnn_accuracy|default('No disponible') }}</p>
     </section>
 
     <!-- Sección: Gráficas -->
@@ -69,7 +69,7 @@
                     <td>{{ rec.time }}</td>
                     <td>{{ rec.filename or 'Canvas' }}</td>
                     <td>{{ rec.pred }}</td>
-                    <td>{{ '%.2f' % ((rec.confidence or 0)*100) }}%</td>
+                    <td>{{ '%.2f' % ((rec.confidence|default(0))*100) }}%</td>
                     <td>{{ rec.model or 'MLP' }}</td>
                 </tr>
                 {% endfor %}
@@ -90,14 +90,14 @@
     <script>
         const historyData = JSON.parse(document.body.dataset.history);
 
-        // Etiquetas para el eje X
+        // Etiquetas para eje X
         const labels = historyData.map((_, i) => i + 1);
 
-        // Datos por modelo
-        const mlpData = historyData.map(d => d.model === 'MLP' ? (d.confidence ?? 0) : null);
-        const cnnData = historyData.map(d => d.model === 'CNN' ? (d.confidence ?? 0) : null);
+        // Datos por modelo, convertidos a números seguros
+        const mlpData = historyData.map(d => d.model === 'MLP' ? Number(d.confidence || 0) : null);
+        const cnnData = historyData.map(d => d.model === 'CNN' ? Number(d.confidence || 0) : null);
 
-        // Calcular pérdida (loss) como 1 - confidence
+        // Pérdida como 1 - confidence
         const lossMLP = mlpData.map(v => v !== null ? 1 - v : null);
         const lossCNN = cnnData.map(v => v !== null ? 1 - v : null);
 
@@ -134,8 +134,7 @@
         const qrBtn = document.getElementById('generate-qr-btn');
         qrBtn.addEventListener('click', () => {
             const qrImg = document.getElementById('qr-img');
-            const url = qrBtn.dataset.url;
-            qrImg.src = url + '?t=' + new Date().getTime(); // evita cache
+            qrImg.src = qrBtn.dataset.url + '?t=' + new Date().getTime();
         });
     </script>
 </body>

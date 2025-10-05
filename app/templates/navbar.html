@@ -11,25 +11,23 @@
         <a href="{{ url_for('generate_qr_route') }}">Generar QR</a>
 
         {% if session.get('user') %}
-            <!-- Usuario logueado -->
-            <div class="dropdown">
-                <button class="dropbtn">{{ session.get('user') }} ▼</button>
-                <div class="dropdown-content">
-                    <a href="{{ url_for('profile') }}">Mi Perfil</a>
-                    <a href="{{ url_for('my_predictions') }}">Mis Predicciones</a>
-                    <a href="{{ url_for('logout') }}">Cerrar sesión</a>
-                </div>
+        <div class="dropdown">
+            <button class="dropbtn">{{ session.get('user') }} ▼</button>
+            <div class="dropdown-content">
+                <a href="{{ url_for('profile') }}">Mi Perfil</a>
+                <a href="{{ url_for('my_predictions') }}">Mis Predicciones</a>
+                <a href="{{ url_for('logout') }}">Cerrar sesión</a>
             </div>
+        </div>
         {% else %}
-            <!-- Usuario anónimo -->
-            <div class="dropdown">
-                <button class="dropbtn">Anónimo ▼</button>
-                <div class="dropdown-content">
-                    <a href="{{ url_for('my_predictions') }}">Mis Predicciones</a>
-                    <a href="{{ url_for('login') }}">Login</a>
-                    <a href="{{ url_for('register') }}">Registro</a>
-                </div>
+        <div class="dropdown">
+            <button class="dropbtn">Anónimo ▼</button>
+            <div class="dropdown-content">
+                <a href="{{ url_for('my_predictions') }}">Mis Predicciones</a>
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Registro</a>
             </div>
+        </div>
         {% endif %}
 
         <button id="toggle-darkmode-navbar">🌙</button>
@@ -113,7 +111,22 @@
 }
 
 @media (max-width: 768px) {
-    .navbar-right { display: flex; flex-direction: column; align-items: flex-start; }
-    .navbar a, .dropbtn, #toggle-darkmode-navbar { margin: 5px 0; }
+    .navbar-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .navbar a, .dropbtn, #toggle-darkmode-navbar {
+        margin: 5px 0;
+    }
 }
 </style>
+
+<script>
+    // Toggle darkmode desde navbar
+    const darkmodeBtn = document.getElementById('toggle-darkmode-navbar');
+    darkmodeBtn?.addEventListener('click', () => {
+        const darkCSS = document.getElementById('darkmode-css');
+        darkCSS.disabled = !darkCSS.disabled;
+    });
+</script>

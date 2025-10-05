@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Detectar darkmode ---
     const darkmodeLink = document.getElementById("darkmode-css");
-    const isDark = darkmodeLink && !darkmodeLink.disabled;
+    let isDark = darkmodeLink && !darkmodeLink.disabled;
 
     // --- Canvas MNIST ---
     const canvas = document.getElementById("canvas-mnist");
@@ -61,12 +61,27 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch("/predict_batch", { method: "POST", body: formData });
             const data = await res.json();
             resultsList.innerHTML = "";
+
+            // Agrupar resultados por archivo
+            const grouped = {};
             data.forEach(d => {
-                const li = document.createElement("li");
-                if (d.error) li.textContent = `Error (${d.filename}): ${d.error}`;
-                else li.textContent = `${d.filename}: Predicción ${d.pred} (Confianza ${(d.confidence*100).toFixed(2)}%)`;
-                resultsList.appendChild(li);
+                if (!grouped[d.filename]) grouped[d.filename] = [];
+                grouped[d.filename].push(d);
             });
+
+            for (let filename in grouped) {
+                const entries = grouped[filename];
+                const li = document.createElement("li");
+
+                if (entries.some(e => e.error)) {
+                    li.textContent = `Error (${filename}): ${entries.find(e => e.error).error}`;
+                } else {
+                    const text = entries.map(e => `${e.model}: Predicción ${e.pred} (Confianza ${(e.confidence*100).toFixed(2)}%)`).join(" | ");
+                    li.textContent = `${filename}: ${text}`;
+                }
+
+                resultsList.appendChild(li);
+            }
         } catch (err) {
             alert("Error al predecir archivos: " + err.message);
         }
@@ -74,31 +89,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Generar QR ---
     const qrBtn = document.getElementById("generate-qr-btn");
-    const qrText = document.getElementById("qr-text");
     const qrImg = document.getElementById("qr-img");
 
-    qrBtn.addEventListener("click", async () => {
-        const text = qrText.value.trim();
-        if (!text) return alert("Ingresa texto o URL");
-        try {
-            const res = await fetch("/generate_qr", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text })
-            });
-            const blob = await res.blob();
-            qrImg.src = URL.createObjectURL(blob);
-        } catch (err) {
-            alert("Error al generar QR: " + err.message);
-        }
+    qrBtn.addEventListener("click", () => {
+        const url = qrBtn.dataset.url;
+        qrImg.src = url + "?t=" + new Date().getTime();
     });
 
     // --- Actualizar colores si cambia el darkmode dinámicamente ---
     if (darkmodeLink) {
         const observer = new MutationObserver(() => {
-            const dark = !darkmodeLink.disabled;
-            ctx.fillStyle = dark ? "#1e1e1e" : "black";
-            ctx.strokeStyle = dark ? "white" : "white";
+            isDark = !darkmodeLink.disabled;
+            ctx.fillStyle = isDark ? "#1e1e1e" : "black";
+            ctx.strokeStyle = isDark ? "white" : "white";
             clearCanvas();
         });
         observer.observe(darkmodeLink, { attributes: true, attributeFilter: ["disabled"] });
