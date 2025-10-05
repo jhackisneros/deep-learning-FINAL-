@@ -10,7 +10,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from utils.preprocessing import preprocess_image
-from utils.qr_utils import generate_qr_from_data  # ⚠ cambiado
+from utils.qr_utils import generate_qr_from_data  # ⚠ actualizado
 from utils.export_utils import export_predictions_to_csv
 
 app = Flask(__name__)
@@ -148,8 +148,12 @@ def history():
 
 @app.route('/export', methods=['GET'])
 def export():
+    user = request.args.get('user')  # filtrar por usuario si se desea
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
         data = json.load(fh)
+
+    if user:
+        data = [d for d in data if d.get('user') == user]
 
     csv_bytes = export_predictions_to_csv(data)
     return send_file(
@@ -162,19 +166,30 @@ def export():
 # ---------------- Página de estadísticas ----------------
 @app.route('/stats')
 def stats():
-    """Renderiza stats.html con todas las predicciones"""
+    """Renderiza stats.html con predicciones del usuario"""
+    user = request.args.get('user')
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
-        history = json.load(fh)
-    return render_template("stats.html", history=history)
+        data = json.load(fh)
+    if user:
+        data = [d for d in data if d.get('user') == user]
+    return render_template("stats.html", history=data)
 
 # ---------------- QR que contiene predicciones ----------------
 @app.route('/generate_qr', methods=['GET'])
 def generate_qr():
-    """Genera un QR con los datos actuales de predicciones"""
+    """Genera un QR con los datos de predicciones del usuario"""
+    user = request.args.get('user')
+    if not user:
+        return jsonify({'error': 'Se requiere el parámetro user'}), 400
+
     with open(PRED_LOG, 'r', encoding='utf-8') as fh:
-        history = json.load(fh)
-    # ⚡ Aquí el QR contiene directamente los datos de predicción
-    img_bytes = generate_qr_from_data(history)
+        data = json.load(fh)
+
+    # Filtrar solo las predicciones del usuario
+    user_history = [d for d in data if d.get('user') == user]
+
+    # ⚡ Generar QR solo con su historial
+    img_bytes = generate_qr_from_data(user_history)
     return send_file(io.BytesIO(img_bytes), mimetype='image/png')
 
 if __name__ == '__main__':

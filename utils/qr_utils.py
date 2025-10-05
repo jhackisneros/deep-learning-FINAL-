@@ -1,25 +1,40 @@
-# utils/qr_utils.py
 import qrcode
 import io
 import json
 
 def generate_qr_from_data(data: list) -> bytes:
     """
-    Genera un QR que contiene el JSON de las predicciones.
+    Genera un QR que contiene un HTML con las predicciones.
     Devuelve los bytes de la imagen PNG.
     """
-    # Convertir la lista de predicciones a JSON
-    # Para que el QR no sea demasiado grande, limitamos a las últimas 50 predicciones
-    limited_data = data[:50] if len(data) > 50 else data
-    text = json.dumps(limited_data, ensure_ascii=False)
+    # Crear HTML simple con tabla de predicciones
+    rows = ""
+    for rec in data:
+        rows += f"<tr><td>{rec.get('time')}</td><td>{rec.get('filename','Canvas')}</td><td>{rec.get('pred')}</td><td>{rec.get('confidence')*100:.2f}%</td></tr>"
+
+    html = f"""
+    <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Mis Predicciones</title>
+        </head>
+        <body>
+            <h2>Mis Predicciones</h2>
+            <table border="1" cellpadding="5">
+                <tr><th>Hora</th><th>Archivo/Canvas</th><th>Predicción</th><th>Confianza</th></tr>
+                {rows}
+            </table>
+        </body>
+    </html>
+    """
 
     qr = qrcode.QRCode(
-        version=None,  # QR automático según tamaño del texto
+        version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
         box_size=10,
         border=4,
     )
-    qr.add_data(text)
+    qr.add_data(html)
     qr.make(fit=True)
 
     img = qr.make_image(fill_color="black", back_color="white")
