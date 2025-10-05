@@ -45,6 +45,35 @@ document.addEventListener("DOMContentLoaded", () => {
         return canvas.toDataURL("image/png");
     }
 
+    // --- Predicción imagen dibujada ---
+    const predictCanvasBtn = document.getElementById("predict-canvas-btn");
+    const canvasResults = document.getElementById("canvas-results");
+
+    predictCanvasBtn.addEventListener("click", async () => {
+        const imgData = getCanvasData();
+
+        try {
+            const res = await fetch("/predict", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({image: imgData})
+            });
+            const data = await res.json();
+            canvasResults.innerHTML = "";
+
+            // Mostrar predicciones de todos los modelos
+            data.sort((a,b) => a.model.localeCompare(b.model)).forEach(d => {
+                const p = document.createElement("p");
+                const conf = (d.confidence ?? 0) * 100;
+                p.textContent = `${d.model}: ${d.pred} (${conf.toFixed(2)}%)`;
+                canvasResults.appendChild(p);
+            });
+
+        } catch (err) {
+            alert("Error al predecir dibujo: " + err.message);
+        }
+    });
+
     // --- Subida de imágenes ---
     const fileInput = document.getElementById("file-input");
     const predictBtn = document.getElementById("predict-files-btn");
@@ -77,13 +106,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (entries.some(e => e.error)) {
                     li.textContent = `Error (${filename}): ${entries.find(e => e.error).error}`;
                 } else {
-                    // Mostrar predicciones de todos los modelos, ordenadas alfabéticamente
+                    // Mostrar predicciones de todos los modelos
                     const text = entries
                         .sort((a,b) => a.model.localeCompare(b.model))
-                        .map(e => {
-                            const conf = (e.confidence ?? 0) * 100;
-                            return `${e.model}: ${e.pred} (${conf.toFixed(2)}%)`;
-                        }).join(" | ");
+                        .map(e => `${e.model}: ${e.pred} (${(e.confidence*100).toFixed(2)}%)`)
+                        .join(" | ");
                     li.textContent = `${filename}: ${text}`;
                 }
 

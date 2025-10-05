@@ -15,7 +15,7 @@
         button { cursor: pointer; padding: 10px 20px; margin: 5px; font-weight: bold; border-radius: 5px; border: none; background-color: #00bfff; color: white; transition: background 0.2s; }
         button:hover { background-color: #009acd; }
         #qr-generator img { display: block; margin: 15px auto; max-width: 200px; }
-        #file-results li { margin: 5px 0; }
+        #file-results li, #canvas-results p { margin: 5px 0; }
         .user-actions { text-align: center; margin-bottom: 20px; }
         .user-actions a { margin: 0 10px; text-decoration: none; color: #222; font-weight: bold; transition: color 0.2s; }
         .user-actions a:hover { color: #00bfff; }
@@ -42,10 +42,11 @@
         <canvas id="canvas-mnist" width="280" height="280" style="border:1px solid #000;"></canvas>
         <div style="text-align:center;">
             <button id="clear-canvas">Limpiar</button>
+            <button id="predict-canvas-btn">Predecir</button>
         </div>
-        <p id="prediction-realtime" style="text-align:center;">
-            Predicción en tiempo real: <span id="pred-value">-</span>
-        </p>
+        <div id="canvas-results" style="text-align:center; margin-top:10px;">
+            <!-- Aquí se mostrarán predicciones MLP y CNN -->
+        </div>
     </section>
 
     <!-- Sección: Subida de imágenes -->
@@ -79,28 +80,5 @@
     <script src="{{ url_for('static', filename='charts.js') }}"></script>
     <script src="{{ url_for('static', filename='realtime.js') }}"></script>
     <script src="{{ url_for('static', filename='main.js') }}"></script>
-    <script>
-        // Botón QR dinámico
-        const qrBtn = document.getElementById('generate-qr-btn');
-        qrBtn.addEventListener('click', () => {
-            const qrImg = document.getElementById('qr-img');
-            const url = qrBtn.dataset.url;
-            qrImg.src = url + '?t=' + new Date().getTime();
-        });
-
-        // Función para mostrar predicción en porcentaje
-        function updateRealtimePrediction(pred) {
-            const predValue = document.getElementById('pred-value');
-            if (!pred || typeof pred.confidence === 'undefined') {
-                predValue.innerText = '-';
-                return;
-            }
-            const confidencePct = Math.round((pred.confidence ?? 0) * 100);
-            predValue.innerText = `${pred.label} (${confidencePct}%)`;
-        }
-
-        // Exponer función para realtime.js
-        window.updateRealtimePrediction = updateRealtimePrediction;
-    </script>
 </body>
 </html>
