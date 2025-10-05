@@ -20,7 +20,7 @@
         .model-stats p { font-size: 1.2em; margin: 5px 0; }
     </style>
 </head>
-<body data-history='{{ history|tojson }}' data-mlp="{{ mlp_accuracy }}" data-cnn="{{ cnn_accuracy }}">
+<body data-history='{{ history|tojson }}' data-mlp="{{ mlp_accuracy or 0 }}" data-cnn="{{ cnn_accuracy or 0 }}">
     <!-- Navbar -->
     {% include 'navbar.html' %}
 
@@ -69,7 +69,7 @@
                     <td>{{ rec.time }}</td>
                     <td>{{ rec.filename or 'Canvas' }}</td>
                     <td>{{ rec.pred }}</td>
-                    <td>{{ '%.2f' % (rec.confidence*100) }}%</td>
+                    <td>{{ '%.2f' % ((rec.confidence or 0)*100) }}%</td>
                     <td>{{ rec.model or 'MLP' }}</td>
                 </tr>
                 {% endfor %}
@@ -90,47 +90,52 @@
     <script>
         const historyData = JSON.parse(document.body.dataset.history);
 
-        // Separar predicciones por modelo
+        // Etiquetas para el eje X
         const labels = historyData.map((_, i) => i + 1);
-        const mlpData = historyData.map(d => d.model === 'MLP' ? d.confidence ?? 0 : null);
-        const cnnData = historyData.map(d => d.model === 'CNN' ? d.confidence ?? 0 : null);
 
+        // Datos por modelo
+        const mlpData = historyData.map(d => d.model === 'MLP' ? (d.confidence ?? 0) : null);
+        const cnnData = historyData.map(d => d.model === 'CNN' ? (d.confidence ?? 0) : null);
+
+        // Calcular pérdida (loss) como 1 - confidence
         const lossMLP = mlpData.map(v => v !== null ? 1 - v : null);
         const lossCNN = cnnData.map(v => v !== null ? 1 - v : null);
 
         const ctxAcc = document.getElementById('accuracy-chart').getContext('2d');
         const ctxLoss = document.getElementById('loss-chart').getContext('2d');
 
+        // Gráfico Accuracy
         new Chart(ctxAcc, {
             type: 'line',
-            data: { 
-                labels, 
+            data: {
+                labels,
                 datasets: [
                     { label: 'MLP Accuracy', data: mlpData, borderColor: 'rgba(54,162,235,1)', backgroundColor: 'rgba(54,162,235,0.2)', fill: true, tension: 0.3, spanGaps: true },
                     { label: 'CNN Accuracy', data: cnnData, borderColor: 'rgba(255,159,64,1)', backgroundColor: 'rgba(255,159,64,0.2)', fill: true, tension: 0.3, spanGaps: true }
-                ] 
+                ]
             },
             options: { responsive: true, scales: { y: { min: 0, max: 1 } } }
         });
 
+        // Gráfico Loss
         new Chart(ctxLoss, {
             type: 'line',
-            data: { 
-                labels, 
+            data: {
+                labels,
                 datasets: [
                     { label: 'MLP Loss', data: lossMLP, borderColor: 'rgba(54,99,235,1)', backgroundColor: 'rgba(54,99,235,0.2)', fill: true, tension: 0.3, spanGaps: true },
                     { label: 'CNN Loss', data: lossCNN, borderColor: 'rgba(255,99,132,1)', backgroundColor: 'rgba(255,99,132,0.2)', fill: true, tension: 0.3, spanGaps: true }
-                ] 
+                ]
             },
             options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
 
-        // QR dinámico
+        // Botón QR dinámico
         const qrBtn = document.getElementById('generate-qr-btn');
         qrBtn.addEventListener('click', () => {
             const qrImg = document.getElementById('qr-img');
             const url = qrBtn.dataset.url;
-            qrImg.src = url + '?t=' + new Date().getTime(); // evitar cache
+            qrImg.src = url + '?t=' + new Date().getTime(); // evita cache
         });
     </script>
 </body>
