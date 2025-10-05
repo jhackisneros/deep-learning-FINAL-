@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const json = await res.json();
 
             if (Array.isArray(json) && json.length > 0) {
-                // Ordenar predicciones por modelo y mostrar confianza
+                // Ordenar por modelo (MLP primero, CNN después)
                 const predictions = json
                     .sort((a, b) => a.model.localeCompare(b.model))
                     .map(p => {

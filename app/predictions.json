@@ -1,5 +1,13 @@
 [
   {
+    "time": "2025-10-05T19:26:06.106055",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 2,
+    "confidence": 0.9037533402442932,
+    "model": "MLP"
+  },
+  {
     "time": "2025-10-05T19:19:19.340919",
     "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
     "filename": null,
