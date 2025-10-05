@@ -1,5 +1,93 @@
 [
   {
+    "time": "2025-10-05T18:46:03.546824",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 7,
+    "confidence": 0.9686940908432007,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:46:01.115910",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 6,
+    "confidence": 0.39106398820877075,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:58.503699",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 8,
+    "confidence": 0.6513051390647888,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:56.592828",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 8,
+    "confidence": 0.4790489971637726,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:53.925383",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 9,
+    "confidence": 0.20659346878528595,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:52.157852",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 8,
+    "confidence": 0.7474346160888672,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:50.249443",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 4,
+    "confidence": 0.5156405568122864,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:48.179718",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 3,
+    "confidence": 0.61190265417099,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:45.497799",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 1,
+    "confidence": 0.5918707251548767,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:43.078056",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 2,
+    "confidence": 0.9773107171058655,
+    "model": "MLP"
+  },
+  {
+    "time": "2025-10-05T18:45:35.294623",
+    "user": "463d9471-f7e4-4783-badb-fd6e4b09e7d7",
+    "filename": null,
+    "pred": 4,
+    "confidence": 0.46002936363220215,
+    "model": "MLP"
+  },
+  {
     "time": "2025-10-05T18:06:22.255393",
     "user": "877c03a4-5a61-4799-998b-4a7a8a4c3f72",
     "filename": null,

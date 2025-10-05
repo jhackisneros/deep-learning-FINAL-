@@ -114,63 +114,102 @@ def my_predictions():
 # ---------------- Rutas de predicción ----------------
 @app.route('/predict', methods=['POST'])
 def predict():
-    if mlp_model is None:
-        return jsonify({'error': 'Modelo MLP no cargado'}), 500
-
+    user_id = get_current_user()
     data = request.get_json()
     if not data or 'image' not in data:
         return jsonify({'error': 'No image provided'}), 400
 
-    user_id = get_current_user()
-    try:
-        arr = preprocess_image(data['image'], target_size=(28,28), flatten=True)
-        pred = mlp_model.predict(arr.reshape(1, -1))
-        label = int(np.argmax(pred))
-        confidence = float(np.max(pred))
+    results = []
 
-        record = {
-            'time': datetime.utcnow().isoformat(),
-            'user': user_id,
-            'filename': None,
-            'pred': label,
-            'confidence': confidence,
-            'model': 'MLP'  # Aquí se registra el modelo
-        }
-        save_prediction_local(record)
-        return jsonify({'pred': label, 'confidence': confidence, 'model': 'MLP'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    # --- Predicción MLP ---
+    if mlp_model:
+        try:
+            arr = preprocess_image(data['image'], target_size=(28,28), flatten=True)
+            pred = mlp_model.predict(arr.reshape(1, -1))
+            label = int(np.argmax(pred))
+            confidence = float(np.max(pred))
+
+            record_mlp = {
+                'time': datetime.utcnow().isoformat(),
+                'user': user_id,
+                'filename': None,
+                'pred': label,
+                'confidence': confidence,
+                'model': 'MLP'
+            }
+            save_prediction_local(record_mlp)
+            results.append(record_mlp)
+        except Exception as e:
+            results.append({'model': 'MLP', 'error': str(e)})
+
+    # --- Predicción CNN (placeholder) ---
+    if cnn_metrics:
+        try:
+            # Si tienes CNN model, aquí se podría hacer cnn_model.predict(arr)
+            # Por ahora usamos solo precisión del test como placeholder
+            label = None
+            confidence = cnn_metrics.get('cnn_test_accuracy', 0.0)
+            record_cnn = {
+                'time': datetime.utcnow().isoformat(),
+                'user': user_id,
+                'filename': None,
+                'pred': label,
+                'confidence': confidence,
+                'model': 'CNN'
+            }
+            save_prediction_local(record_cnn)
+            results.append(record_cnn)
+        except Exception as e:
+            results.append({'model': 'CNN', 'error': str(e)})
+
+    return jsonify(results)
 
 @app.route('/predict_batch', methods=['POST'])
 def predict_batch():
-    if mlp_model is None:
-        return jsonify({'error': 'Modelo MLP no cargado'}), 500
-
+    user_id = get_current_user()
     results = []
     files = request.files.getlist('files')
     if not files:
         return jsonify({'error': 'No files provided'}), 400
 
-    user_id = get_current_user()
-
     for f in files:
-        try:
-            arr = preprocess_image(f.read(), target_size=(28,28), flatten=True)
-            pred = mlp_model.predict(arr.reshape(1, -1))
-            label = int(np.argmax(pred))
-            confidence = float(np.max(pred))
-            record = {
-                'time': datetime.utcnow().isoformat(),
-                'user': user_id,
-                'filename': f.filename or None,
-                'pred': label,
-                'confidence': confidence,
-                'model': 'MLP'
-            }
-            save_prediction_local(record)
-            results.append(record)
-        except Exception as e:
-            results.append({'filename': getattr(f, 'filename', None), 'error': str(e)})
+        # --- MLP ---
+        if mlp_model:
+            try:
+                arr = preprocess_image(f.read(), target_size=(28,28), flatten=True)
+                pred = mlp_model.predict(arr.reshape(1, -1))
+                label = int(np.argmax(pred))
+                confidence = float(np.max(pred))
+                record_mlp = {
+                    'time': datetime.utcnow().isoformat(),
+                    'user': user_id,
+                    'filename': f.filename or None,
+                    'pred': label,
+                    'confidence': confidence,
+                    'model': 'MLP'
+                }
+                save_prediction_local(record_mlp)
+                results.append(record_mlp)
+            except Exception as e:
+                results.append({'filename': f.filename, 'model': 'MLP', 'error': str(e)})
+
+        # --- CNN (placeholder) ---
+        if cnn_metrics:
+            try:
+                label = None
+                confidence = cnn_metrics.get('cnn_test_accuracy', 0.0)
+                record_cnn = {
+                    'time': datetime.utcnow().isoformat(),
+                    'user': user_id,
+                    'filename': f.filename or None,
+                    'pred': label,
+                    'confidence': confidence,
+                    'model': 'CNN'
+                }
+                save_prediction_local(record_cnn)
+                results.append(record_cnn)
+            except Exception as e:
+                results.append({'filename': f.filename, 'model': 'CNN', 'error': str(e)})
 
     return jsonify(results)
 
@@ -209,7 +248,7 @@ def stats():
 
     mlp_acc = None
     if mlp_model:
-        mlp_acc = "Ya calculada en Colab"  # Placeholder, si quieres podrías calcularla en x_test/y_test
+        mlp_acc = "Ya calculada en Colab"  # Placeholder
 
     cnn_acc = cnn_metrics.get("cnn_test_accuracy")
 
@@ -221,7 +260,7 @@ def generate_qr_route():
     """Genera un QR apuntando a la página QR-view del usuario"""
     user_id = get_current_user()
     url = url_for('qr_view', user_id=user_id, _external=True)
-    img_bytes = generate_qr_from_url(url)  # generamos QR solo con URL
+    img_bytes = generate_qr_from_url(url)
     return send_file(io.BytesIO(img_bytes), mimetype='image/png')
 
 # ---------------- Página QR View ----------------
